@@ -22,10 +22,12 @@ Ready, waiting for connections at https://127.0.0.1:48608
 (You can run testserver with either `none`, `basic` or `oauth` parameter)
 
 Copy the snippet to `/etc/rkt/auth.d/test.json` and run `rkt
---insecure-skip-verify run https://127.0.0.1:48608/<WHATEVER>/prog.aci`. The `rkt` output ought to be something like:
+--insecure-skip-verify run
+https://127.0.0.1:48608/<WHATEVER>/prog.aci`. The `rkt` output ought
+to be something like:
 ```
-# /home/krnowak/projects/coreos/14/src/github.com/coreos/rkt/bin/rkt --insecure-skip-verify run https://127.0.0.1:48608/basic10/prog.aci
-rkt: fetching image from https://127.0.0.1:48608/basic10/prog.aci
+# rkt --insecure-skip-verify run https://127.0.0.1:48608/basic1/prog.aci
+rkt: fetching image from https://127.0.0.1:48608/basic1/prog.aci
 
 
 
