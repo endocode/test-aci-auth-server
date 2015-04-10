@@ -107,7 +107,7 @@ func prepareACI() ([]byte, error) {
 	if err := buildProg(); err != nil {
 		return nil, err
 	}
-	fn, err := buildACI();
+	fn, err := buildACI()
 	if err != nil {
 		return nil, err
 	}
@@ -187,22 +187,41 @@ func getAuthPayload(r *http.Request, authType string) (string, *httpError) {
 }
 
 func main() {
-	typesStr := "none, basic, oauth"
-	types := strings.Split(typesStr, ", ")
+	cmdsStr := "start, stop"
 	if len(os.Args) < 2 {
-		fmt.Printf("Expected a type - %s\n", typesStr)
+		fmt.Printf("Error: expected a command - %s\n", cmdsStr)
 		os.Exit(1)
 	}
+	var err error
+	switch os.Args[1] {
+	case "start":
+		err = startServer(os.Args[2:])
+	case "stop":
+		err = stopServer(os.Args[2:])
+	default:
+		err = fmt.Errorf("wrong command %q, should be %s", os.Args[1], cmdsStr)
+	}
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func startServer(args []string) error {
+	typesStr := "none, basic, oauth"
+	if len(args) < 1 {
+		return fmt.Errorf("expected a type - %s", typesStr)
+	}
+	types := strings.Split(typesStr, ", ")
 	auth := ""
 	for _, v := range types {
-		if v == os.Args[1] {
+		if v == args[0] {
 			auth = v
 			break
 		}
 	}
 	if auth == "" {
-		fmt.Printf("Wrong type %q, should, be %s\n", os.Args[1], typesStr)
-		os.Exit(1)
+		return fmt.Errorf("wrong type %q, should, be %s", args[0], typesStr)
 	}
 	stop := make(chan struct{})
 	msg := make(chan string)
@@ -215,7 +234,10 @@ func main() {
 	ts.TLS = &tls.Config{InsecureSkipVerify: true}
 	ts.StartTLS()
 	defer ts.Close()
-	parsed, _ := url.Parse(ts.URL)
+	parsed, err := url.Parse(ts.URL)
+	if err != nil {
+		return err
+	}
 	switch auth {
 	case "none":
 		// nothing to do
@@ -232,6 +254,7 @@ func main() {
 	fmt.Printf("Ready, waiting for connections at %s\n", ts.URL)
 	loop(stop, msg)
 	fmt.Println("Byebye")
+	return nil
 }
 
 func loop(stopChan <-chan struct{}, msgChan <-chan string) {
@@ -260,4 +283,25 @@ func printCreds(host, auth, creds string) {
 }
 
 `, host, auth, creds)
+}
+
+func stopServer(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("expected a host")
+	}
+	host := args[0]
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: transport}
+	res, err := client.Post(host, "whatever", nil)
+	if err != nil {
+		return fmt.Errorf("failed to send post to %q: %v", host, err)
+	}
+	defer res.Body.Close()
+	fmt.Printf("Response status: %s\n", res.Status)
+	if res.StatusCode/100 != 2 {
+		return fmt.Errorf("got a nonsuccess status")
+	}
+	return nil
 }
