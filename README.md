@@ -1,8 +1,8 @@
-Before running testserver make sure that `go` and `actool` are in your
+Before running `test-aci-auth-server` make sure that `go` and `actool` are in your
 `$PATH`.
 
 ```
-$ ./testserver basic
+$ ./test-aci-auth-server start basic
 
 {
 	"rktKind": "auth",
@@ -19,7 +19,7 @@ $ ./testserver basic
 Ready, waiting for connections at https://127.0.0.1:48608
 ```
 
-(You can run testserver with either `none`, `basic` or `oauth` parameter)
+(You can run `test-aci-auth-server start` with either `none`, `basic` or `oauth` parameter)
 
 Copy the snippet to `/etc/rkt/auth.d/test.json` and run `rkt
 --insecure-skip-verify run
@@ -56,16 +56,16 @@ All filesystems unmounted.
 Halting system.
 ```
 
-While the additional output from testserver:
+While the additional output from `test-aci-auth-server`:
 ```
 Trying to serve "/basic10/prog.aci"
   serving
     done.
 ```
 
-The testserver with oauth will print something like this:
+The `test-aci-auth-server start` with `oauth` will print something like this:
 ```
-$ ./testserver oauth
+$ ./test-aci-auth-server start oauth
 
 {
 	"rktKind": "auth",
@@ -79,4 +79,10 @@ $ ./testserver oauth
 }
 
 Ready, waiting for connections at https://127.0.0.1:48805
+```
+
+To stop the `test-aci-auth-server` run stop command:
+```
+$ ./test-aci-auth-server stop https://127.0.0.1:60268
+Response status: 200 OK
 ```
