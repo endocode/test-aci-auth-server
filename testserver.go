@@ -56,6 +56,7 @@ func loop(server *lib.Server) {
 	for {
 		select {
 		case <-server.Stop:
+			server.Close()
 			return
 		case msg, ok := <-server.Msg:
 			if ok {
