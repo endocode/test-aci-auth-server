@@ -79,25 +79,15 @@ func (t *aciToolkit) createTree() (string, error) {
 }
 
 func (t *aciToolkit) buildProg(aciDir string) error {
-	outBuf := new(bytes.Buffer)
-	errBuf := new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path: t.goTool,
-		Args: []string{
-			"go",
-			"build",
-			"-o",
-			"prog",
-			"./prog.go",
-		},
-		Dir:    filepath.Join(aciDir, "rootfs"),
-		Stdout: outBuf,
-		Stderr: errBuf,
+	args := []string{
+		"go",
+		"build",
+		"-o",
+		"prog",
+		"./prog.go",
 	}
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute `go build`: %v\nstdout:\n%v\n\nstderr:\n%v)", err, outBuf.String(), errBuf.String())
-	}
-	return nil
+	dir := filepath.Join(aciDir, "rootfs")
+	return runTool(t.goTool, args, dir)
 }
 
 func (t *aciToolkit) buildACI(aciDir string) (string, error) {
@@ -109,21 +99,30 @@ func (t *aciToolkit) buildACI(aciDir string) (string, error) {
 		return "", fmt.Errorf("failed to write a stamp: %v", err)
 	}
 	fn := "prog-build.aci"
+	args := []string{
+		"actool",
+		"build",
+		aciDir,
+		fn,
+	}
+	if err := runTool(t.acTool, args, ""); err != nil {
+		return "", err
+	}
+	return fn, nil
+}
+
+func runTool(tool string, args []string, dir string) error {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path: t.acTool,
-		Args: []string{
-			"actool",
-			"build",
-			aciDir,
-			fn,
-		},
+		Path:   tool,
+		Args:   args,
+		Dir:    dir,
 		Stdout: outBuf,
 		Stderr: errBuf,
 	}
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to execute `actool build`: %v\nstdout:\n%v\n\nstderr:\n%v)", err, outBuf.String(), errBuf.String())
+		return fmt.Errorf("failed to execute `%s %s`: %v\nstdout:\n%v\n\nstderr:\n%v)", args[0], args[1], err, outBuf.String(), errBuf.String())
 	}
-	return fn, nil
+	return nil
 }
