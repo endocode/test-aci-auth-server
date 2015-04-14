@@ -158,17 +158,27 @@ func (s *Server) Close() {
 }
 
 func NewServer(auth Type, msgCapacity int) (*Server, error) {
-	acTool, err := exec.LookPath("actool")
+	acTool, err := getTool("actool")
 	if err != nil {
-		return nil, fmt.Errorf("failed to find actool in $PATH: %v", err)
+		return nil, err
 	}
-	acTool = filepath.Abs(acTool)
-	goTool, err := exec.LookPath("go")
+	goTool, err := getTool("go")
 	if err != nil {
-		return nil, fmt.Errorf("failed to find go in $PATH: %v", err)
+		return nil, err
 	}
-	goTool = filepath.Abs(goTool)
 	return NewServerWithPaths(auth, msgCapacity, acTool, goTool)
+}
+
+func getTool(tool string) (string, error) {
+	toolPath, err := exec.LookPath(tool)
+	if err != nil {
+		return "", fmt.Errorf("failed to find %s in $PATH: $v", tool, err)
+	}
+	absToolPath, err := filepath.Abs(toolPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute path of %s: %v", tool, err)
+	}
+	return absToolPath, nil
 }
 
 func NewServerWithPaths(auth Type, msgCapacity int, acTool, goTool string) (*Server, error) {
