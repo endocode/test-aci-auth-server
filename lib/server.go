@@ -166,10 +166,16 @@ func NewServer(auth Type, msgCapacity int) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to find go in $PATH: %v", err)
 	}
-	return NewServerWithPaths(auth, msgCapacity, acTool, goTool), nil
+	return NewServerWithPaths(auth, msgCapacity, acTool, goTool)
 }
 
-func NewServerWithPaths(auth Type, msgCapacity int, acTool, goTool string) *Server {
+func NewServerWithPaths(auth Type, msgCapacity int, acTool, goTool string) (*Server, error) {
+	if !filepath.IsAbs(acTool) {
+		return nil, fmt.Errorf("path to actool has to be absolute (%s is not)", acTool)
+	}
+	if !filepath.IsAbs(goTool) {
+		return nil, fmt.Errorf("path to go has to be absolute (%s is not)", goTool)
+	}
 	stop := make(chan struct{})
 	msg := make(chan string, msgCapacity)
 	server := &Server{
@@ -203,7 +209,7 @@ func NewServerWithPaths(auth Type, msgCapacity int, acTool, goTool string) *Serv
 	default:
 		panic("Woe is me!")
 	}
-	return server
+	return server, nil
 }
 
 func sprintCreds(host, auth, creds string) string {
