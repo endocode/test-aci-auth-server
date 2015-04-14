@@ -42,7 +42,10 @@ func start(args []string) error {
 	if !ok {
 		return fmt.Errorf("wrong type %q, should, be %s", args[0], typesStr)
 	}
-	server := lib.StartServer(auth)
+	server, err := lib.StartServer(auth)
+	if err != nil {
+		return fmt.Errorf("failed to start server: %v", err)
+	}
 	if server.Conf != "" {
 		fmt.Printf(server.Conf)
 	}

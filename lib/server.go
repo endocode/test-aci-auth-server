@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -28,9 +29,10 @@ func (e *httpError) Error() string {
 }
 
 type serverHandler struct {
-	auth Type
-	stop chan<- struct{}
-	msg  chan<- string
+	auth  Type
+	stop  chan<- struct{}
+	msg   chan<- string
+	tools *aciToolkit
 }
 
 func (h *serverHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +95,7 @@ func (h *serverHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch filepath.Base(r.URL.Path) {
 	case "prog.aci":
 		h.sendMsg(fmt.Sprintf("  serving"))
-		if data, err := prepareACI(); err != nil {
+		if data, err := h.tools.prepareACI(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			h.sendMsg(fmt.Sprintf("    failed (%v)", err))
 		} else {
@@ -155,7 +157,19 @@ func (s *Server) Close() {
 	close(s.handler.stop)
 }
 
-func NewServer(auth Type, msgCapacity int) *Server {
+func NewServer(auth Type, msgCapacity int) (*Server, error) {
+	acTool, err := exec.LookPath("actool")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find actool in $PATH: %v", err)
+	}
+	goTool, err := exec.LookPath("go")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find go in $PATH: %v", err)
+	}
+	return NewServerWithPaths(auth, msgCapacity, acTool, goTool), nil
+}
+
+func NewServerWithPaths(auth Type, msgCapacity int, acTool, goTool string) *Server {
 	stop := make(chan struct{})
 	msg := make(chan string, msgCapacity)
 	server := &Server{
@@ -165,6 +179,10 @@ func NewServer(auth Type, msgCapacity int) *Server {
 			auth: auth,
 			stop: stop,
 			msg:  msg,
+			tools: &aciToolkit{
+				acTool: acTool,
+				goTool: goTool,
+			},
 		},
 	}
 	server.http = httptest.NewUnstartedServer(server.handler)

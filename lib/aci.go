@@ -10,18 +10,23 @@ import (
 	"time"
 )
 
-func prepareACI() ([]byte, error) {
-	dir, err := createTree()
+type aciToolkit struct {
+	acTool string
+	goTool string
+}
+
+func (t *aciToolkit) prepareACI() ([]byte, error) {
+	dir, err := t.createTree()
 	if dir != "" {
 		defer os.RemoveAll(dir)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ACI tree: %v", err)
 	}
-	if err := buildProg(dir); err != nil {
+	if err := t.buildProg(dir); err != nil {
 		return nil, fmt.Errorf("failed to build test program: %v", err)
 	}
-	fn, err := buildACI(dir)
+	fn, err := t.buildACI(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ACI: %v", err)
 	}
@@ -53,7 +58,7 @@ func main() {
 `
 )
 
-func createTree() (string, error) {
+func (t *aciToolkit) createTree() (string, error) {
 	aciDir := "ACI"
 	rootDir := filepath.Join(aciDir, "rootfs")
 	manifestFile := filepath.Join(aciDir, "manifest")
@@ -73,15 +78,11 @@ func createTree() (string, error) {
 	return aciDir, nil
 }
 
-func buildProg(aciDir string) error {
-	compiler, err := exec.LookPath("go")
-	if err != nil {
-		return fmt.Errorf("failed to find `go`: %v", err)
-	}
+func (t *aciToolkit) buildProg(aciDir string) error {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path: compiler,
+		Path: t.goTool,
 		Args: []string{
 			"go",
 			"build",
@@ -99,11 +100,7 @@ func buildProg(aciDir string) error {
 	return nil
 }
 
-func buildACI(aciDir string) (string, error) {
-	actool, err := exec.LookPath("actool")
-	if err != nil {
-		return "", fmt.Errorf("failed to find `actool`: %v", err)
-	}
+func (t *aciToolkit) buildACI(aciDir string) (string, error) {
 	timedata, err := time.Now().MarshalBinary()
 	if err != nil {
 		return "", fmt.Errorf("failed to serialize current date to bytes: %v", err)
@@ -115,7 +112,7 @@ func buildACI(aciDir string) (string, error) {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path: actool,
+		Path: t.acTool,
 		Args: []string{
 			"actool",
 			"build",
