@@ -162,10 +162,12 @@ func NewServer(auth Type, msgCapacity int) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to find actool in $PATH: %v", err)
 	}
+	acTool = filepath.Abs(acTool)
 	goTool, err := exec.LookPath("go")
 	if err != nil {
 		return nil, fmt.Errorf("failed to find go in $PATH: %v", err)
 	}
+	goTool = filepath.Abs(goTool)
 	return NewServerWithPaths(auth, msgCapacity, acTool, goTool)
 }
 
